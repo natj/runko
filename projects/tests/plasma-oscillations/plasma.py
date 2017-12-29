@@ -3,6 +3,11 @@ from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 
+from multiprocessing.pool import ThreadPool
+
+from functools import partial
+from itertools import repeat
+
 import sys, os
 
 import corgi
@@ -21,11 +26,15 @@ from visualize import getYee
 
 import injector
 
+from tasks import init_solvers
+from tasks import push_momentum
+from tasks import push_spatial
+from tasks import deposit_current
+from tasks import clip
+from tasks import cycle
 
-def updateBoundaries(node):
-    for cid in node.getCellIds():
-        c = node.getCellPtr( cid )
-        c.updateBoundaries(node)
+
+
 
 
 def save(n, conf, lap, dset):
@@ -35,6 +44,8 @@ def save(n, conf, lap, dset):
 
     dset[:, lap] = yee['ex']
 
+
+#global node
 
 
 
@@ -93,14 +104,14 @@ if __name__ == "__main__":
 
 
     #setup momentum space solver
-    vsol = plasma.MomentumLagrangianSolver()
-    intp = ptools.BundleInterpolator4th()
-    vsol.setInterpolator(intp)
+    #vsol = plasma.MomentumLagrangianSolver()
+    #intp = ptools.BundleInterpolator4th()
+    #vsol.setInterpolator(intp)
 
 
-    #setup spatial space solver
-    ssol = plasma.SpatialLagrangianSolver2nd()
-    ssol.setGrid(node)
+    ##setup spatial space solver
+    #ssol = plasma.SpatialLagrangianSolver2nd()
+    #ssol.setGrid(node)
 
 
     import h5py
@@ -117,6 +128,12 @@ if __name__ == "__main__":
     dset = grp.create_dataset("Ex", (conf.Nx*conf.NxMesh, Nt), dtype='f')
 
 
+    # Prepare threading
+    tasks = node.getCellIds()
+    pool = ThreadPool(8, initializer=init_solvers, initargs=(node,))
+
+    print(tasks)
+
 
     #simulation loop
     for lap in range(1,Nt):
@@ -127,47 +144,57 @@ if __name__ == "__main__":
         #    c = node.getCellPtr( cid )
         #    c.pushE()
 
+
         #momentum step
-        for j in range(node.getNy()):
-            for i in range(node.getNx()):
-                cell = node.getCellPtr(i,j)
-                vsol.setCell(cell)
-                vsol.solve()
-
-        #spatial step
-        for j in range(node.getNy()):
-            for i in range(node.getNx()):
-                ssol.setTargetCell(i,j)
-                ssol.solve()
-
-        #cycle to the new fresh snapshot
-        for j in range(node.getNy()):
-            for i in range(node.getNx()):
-                cell = node.getCellPtr(i,j)
-                cell.cyclePlasma()
-
-        #currents
-        for cid in node.getCellIds():
-            c = node.getCellPtr( cid )
-            c.depositCurrent()
+        #for j in range(node.getNy()):
+        #    for i in range(node.getNx()):
+        #        cell = node.getCellPtr(i,j)
+        #        vsol.setCell(cell)
+        #        vsol.solve()
+        #pool.map(partial( push_momentum, node=node), tasks)
+        pool.map(push_momentum, zip(tasks, repeat(node)))
 
 
-        #clip every cell
-        for j in range(node.getNy()):
-            for i in range(node.getNx()):
-                cell = node.getCellPtr(i,j)
-                cell.clip()
+        ##spatial step
+        #for j in range(node.getNy()):
+        #    for i in range(node.getNx()):
+        #        ssol.setTargetCell(i,j)
+        #        ssol.solve()
+        pool.map(push_spatial, zip(tasks, repeat(node)))
+
+        ##cycle to the new fresh snapshot
+        #for j in range(node.getNy()):
+        #    for i in range(node.getNx()):
+        #        cell = node.getCellPtr(i,j)
+        #        cell.cyclePlasma()
+        cycle(node)
+
+        ##currents
+        #for cid in node.getCellIds():
+        #    c = node.getCellPtr( cid )
+        #    c.depositCurrent()
+        #pool.map(partial( deposit_current, node=node), tasks)
+        pool.map(deposit_current, zip(tasks, repeat(node)))
+
+        ##clip every cell
+        #for j in range(node.getNy()):
+        #    for i in range(node.getNx()):
+        #        cell = node.getCellPtr(i,j)
+        #        cell.clip()
+        clip(node)
+
+
 
 
         #I/O
         if (lap % 1 == 0):
             print("--- lap {}".format(lap))
 
-            #save temporarily to file
-            save(node, conf, lap, dset)
+        #    #save temporarily to file
+        #    save(node, conf, lap, dset)
 
 
-        if (lap % 1 == 0):
+        if (lap % 5 == 0):
             plotNode(axs[0], node, conf)
             plotXmesh(axs[1], node, conf, 0) #electrons
             plotXmesh(axs[2], node, conf, 1) #positrons
@@ -175,6 +202,9 @@ if __name__ == "__main__":
             plotJ(axs[3], node, conf)
             plotE(axs[4], node, conf)
             saveVisz(lap, node, conf)
+
+
+    pool.close()
 
 
     #node.finalizeMpi()
