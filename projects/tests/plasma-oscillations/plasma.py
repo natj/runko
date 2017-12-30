@@ -3,7 +3,7 @@ from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 
-from multiprocessing.pool import ThreadPool
+import multiprocessing as mp
 
 from functools import partial
 from itertools import repeat
@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
     # Prepare threading
     tasks = node.getCellIds()
-    pool = ThreadPool(8, initializer=init_solvers, initargs=(node,))
+    pool = mp.Pool(8, initializer=init_solvers, initargs=(node,))
 
     print(tasks)
 

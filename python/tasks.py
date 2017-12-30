@@ -23,6 +23,7 @@ def init_solvers(node):
     ssol = plasma.SpatialLagrangianSolver2nd()
     ssol.setGrid(node)
 
+    return 
 
 
 
@@ -48,6 +49,7 @@ def push_spatial(args):
     ssol.setTargetCell(i,j)
     ssol.solve()
 
+    return 
 
 
 def deposit_current(args):
@@ -63,12 +65,16 @@ def updateBoundaries(cid):
     c = node.getCellPtr( cid )
     c.updateBoundaries(node)
 
+    return
+
 
 # Cycle all Vlasov containers ahead
 def cycle(node):
     for cid in node.getCellIds():
         cell = node.getCellPtr( cid )
         cell.cyclePlasma()
+
+    return
 
 
 # Cycle all Vlasov containers ahead
@@ -77,5 +83,6 @@ def clip(node):
         cell = node.getCellPtr( cid )
         cell.clip()
 
+    return
 
 
