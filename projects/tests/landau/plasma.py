@@ -64,10 +64,13 @@ def filler(xloc, uloc, ispcs, conf):
     #brownian_noise = 0.01*np.random.standard_normal() 
     #brownian_noise *= delgam
 
+    #scale to wp=1
+    wp = conf.dt**2
+
 
     #Classical Maxwellian distribution
     #f  = (1.0/(2.0*np.pi*delgam))**(3.0/2.0)
-    f  = (1.0/(2.0*np.pi*delgam))**(0.5)
+    f  = wp*(1.0/(2.0*np.pi*delgam))**(0.5)
 
 
     #f *= np.exp(-0.5*((ux - mux - mux_noise)**2)/(delgam + delgam_noise) + brownian_noise)
@@ -106,6 +109,8 @@ def insert_em(node, conf):
     Lx  = conf.Nx*conf.NxMesh*conf.dx/2.0
     k = 2.0*np.pi
 
+    norm = conf.dt**2
+
     for i in range(node.getNx()):
         for j in range(node.getNy()):
             c = node.getCellPtr(i,j)
@@ -120,7 +125,7 @@ def insert_em(node, conf):
                         xloc1 = injector.spatialLoc(node, (i,j), (l+1,m,n), conf)
                         xmid = 0.5*(xloc0[0] + xloc1[0])
 
-                        yee.ex[l,m,n] = -np.abs(conf.me)*conf.beta*np.sin(k*xmid/Lx)/k
+                        yee.ex[l,m,n] = -norm*np.abs(conf.me)*conf.beta*np.sin(k*xmid/Lx)/k
 
 
 
