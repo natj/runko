@@ -48,7 +48,6 @@ def parse_input():
             print("looking for Conf file inside {}".format(args.fdir))
             print("TODO: not implemented")
 
-
     return conf, fdir, args
 
 

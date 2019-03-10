@@ -258,11 +258,11 @@ class Tile :
 
   void add_analysis_species();
 
-  virtual std::vector<mpi::request> 
-  send_data( mpi::communicator&, int orig, int tag) override;
+  virtual void
+  send_data( mpi::communicator&, int orig, int tag, std::vector<mpi::request>& reqs) override;
 
-  virtual std::vector<mpi::request> 
-  recv_data( mpi::communicator&, int dest, int tag) override;
+  virtual void
+  recv_data( mpi::communicator&, int dest, int tag, std::vector<mpi::request>& reqs ) override;
 };
 
 

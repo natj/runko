@@ -95,27 +95,28 @@ void Tile<2>::get_incoming_particles(
 
 
 template<std::size_t D>
-std::vector<mpi::request> Tile<D>::send_data( 
+void Tile<D>::send_data( 
     mpi::communicator& comm, 
     int dest, 
-    int tag)
+    int tag,
+    std::vector<mpi::request>& reqs)
 {
-  if     (tag == 0) return fields::Tile<D>::send_data(comm, dest, tag);
-  else if(tag == 1) return fields::Tile<D>::send_data(comm, dest, tag);
-  else if(tag == 2) return fields::Tile<D>::send_data(comm, dest, tag);
+  if     (tag == 0) return fields::Tile<D>::send_data(comm, dest, tag, reqs);
+  else if(tag == 1) return fields::Tile<D>::send_data(comm, dest, tag, reqs);
+  else if(tag == 2) return fields::Tile<D>::send_data(comm, dest, tag, reqs);
 
-  else if(tag == 3) return send_particle_data(comm,dest);
-  else if(tag == 4) return send_particle_extra_data(comm,dest);
+  else if(tag == 3) return send_particle_data(comm,dest, reqs);
+  else if(tag == 4) return send_particle_extra_data(comm,dest, reqs);
   else assert(false);
 }
 
 
 template<std::size_t D>
-std::vector<mpi::request> Tile<D>::send_particle_data( 
+void Tile<D>::send_particle_data( 
     mpi::communicator& comm, 
-    int dest)
+    int dest, 
+    std::vector<mpi::request>& reqs)
 {
-  std::vector<mpi::request> reqs;
   for(size_t ispc=0; ispc<Nspecies(); ispc++) {
     auto& container = get_container(ispc);
 
@@ -126,16 +127,15 @@ std::vector<mpi::request> Tile<D>::send_particle_data(
         );
   }
 
-  return reqs;
 }
 
 
 template<std::size_t D>
-std::vector<mpi::request> Tile<D>::send_particle_extra_data( 
+void Tile<D>::send_particle_extra_data( 
     mpi::communicator& comm, 
-    int dest)
+    int dest,
+    std::vector<mpi::request>& reqs)
 {
-  std::vector<mpi::request> reqs;
   for(size_t ispc=0; ispc<Nspecies(); ispc++) {
     auto& container = get_container(ispc);
 
@@ -148,32 +148,32 @@ std::vector<mpi::request> Tile<D>::send_particle_extra_data(
     }
   }
 
-  return reqs;
 }
 
 
 template<std::size_t D>
-std::vector<mpi::request> Tile<D>::recv_data( 
+void Tile<D>::recv_data( 
     mpi::communicator& comm, 
     int orig, 
-    int tag)
+    int tag, 
+    std::vector<mpi::request>& reqs)
 {
-  if     (tag == 0) return fields::Tile<D>::recv_data(comm, orig, tag);
-  else if(tag == 1) return fields::Tile<D>::recv_data(comm, orig, tag);
-  else if(tag == 2) return fields::Tile<D>::recv_data(comm, orig, tag);
+  if     (tag == 0) return fields::Tile<D>::recv_data(comm, orig, tag, reqs);
+  else if(tag == 1) return fields::Tile<D>::recv_data(comm, orig, tag, reqs);
+  else if(tag == 2) return fields::Tile<D>::recv_data(comm, orig, tag, reqs);
 
-  else if(tag == 3) return recv_particle_data(comm,orig);
-  else if(tag == 4) return recv_particle_extra_data(comm,orig);
+  else if(tag == 3) return recv_particle_data(comm,orig, reqs);
+  else if(tag == 4) return recv_particle_extra_data(comm, orig, reqs);
   else assert(false);
 }
 
 
 template<std::size_t D>
-std::vector<mpi::request> Tile<D>::recv_particle_data( 
+void Tile<D>::recv_particle_data( 
     mpi::communicator& comm, 
-    int orig)
+    int orig, 
+    std::vector<mpi::request>& reqs)
 {
-  std::vector<mpi::request> reqs;
   for (size_t ispc=0; ispc<Nspecies(); ispc++) {
     auto& container = get_container(ispc);
     container.incoming_particles.resize( container.optimal_message_size );
@@ -184,18 +184,15 @@ std::vector<mpi::request> Tile<D>::recv_particle_data(
           container.optimal_message_size)
         );
   }
-
-  return reqs;
 }
 
 
 template<std::size_t D>
-std::vector<mpi::request> Tile<D>::recv_particle_extra_data( 
+void Tile<D>::recv_particle_extra_data( 
     mpi::communicator& comm, 
-    int orig )
+    int orig, 
+    std::vector<mpi::request>& reqs)
 {
-  std::vector<mpi::request> reqs;
-
   // this assumes that wait for the first message is already called
   // and passed.
 
@@ -222,8 +219,6 @@ std::vector<mpi::request> Tile<D>::recv_particle_extra_data(
     //TODO: dynamic optimal_message_size here
     //container.optimal_message_size = msginfo.size();
   }
-
-  return reqs;
 }
 
 template<std::size_t D>
