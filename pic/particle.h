@@ -181,6 +181,9 @@ class ParticleContainer {
     
   // clear all containers
   virtual void clear();
+    
+  // erase all containers (clears memory)
+  virtual void erase();
 
   /// size of the container (in terms of particles)
   size_t size();

@@ -78,6 +78,33 @@ void ParticleContainer::clear()
   Nprtcls = 0;
 }
 
+
+void ParticleContainer::erase()
+{
+
+  incoming_particles.erase(
+      incoming_particles.begin(), 
+      incoming_particles.end());
+
+  incoming_extra_particles.erase(
+      incoming_extra_particles.begin(), 
+      incoming_extra_particles.end());
+
+  outgoing_particles.erase(
+      outgoing_particles.begin(), 
+      outgoing_particles.end());
+
+  outgoing_extra_particles.erase(
+      outgoing_extra_particles.begin(), 
+      outgoing_extra_particles.end());
+
+  to_other_tiles.erase(
+      to_other_tiles.begin(),
+      to_other_tiles.end()
+      );
+
+}
+
 size_t ParticleContainer::size() 
 { 
   // FIXME: these fail
@@ -297,15 +324,15 @@ void ParticleContainer::transfer_and_wrap_particles(
 
 void ParticleContainer::pack_all_particles()
 {
-  outgoing_particles.clear();
-  outgoing_extra_particles.clear();
+  //outgoing_particles.clear();
+  //outgoing_extra_particles.clear();
     
   // +1 for info particle
   int np = size() + 1;
   InfoParticle infoprtcl(np);
 
   outgoing_particles.reserve(optimal_message_size);
-  if (np-optimal_message_size > 0) {
+  if(np-optimal_message_size > 0) {
     outgoing_extra_particles.reserve( np-optimal_message_size );
   }
 
@@ -405,6 +432,10 @@ void ParticleContainer::unpack_incoming_particles()
 
   int number_of_secondary_particles = incoming_extra_particles.size();
 
+  // reserve beforehand to optimize pushing via vector slow_path
+  reserve(size() + number_of_primary_particles + number_of_secondary_particles);
+
+
   // skipping 1st info particle
   for(int i=1; i<number_of_primary_particles; i++){
     locx = incoming_particles[i].x();
@@ -438,7 +469,6 @@ void ParticleContainer::unpack_incoming_particles()
     add_identified_particle({locx,locy,locz}, {velx,vely,velz}, wgts, ids, proc);
   }
 
-  return;
 }
 
 

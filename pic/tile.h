@@ -120,6 +120,9 @@ public:
   /// delete all particles from each container
   void delete_all_particles();
 
+  /// erase all temporary arrays to free memory
+  void erase_temporary_arrays();
+
 };
 
 

@@ -123,7 +123,7 @@ void Tile<D>::send_particle_data(
     reqs.emplace_back(
         comm.isend(dest, get_tag(corgi::Tile<D>::cid, ispc), 
           container.outgoing_particles.data(), 
-          container.outgoing_particles.size())
+          container.optimal_message_size)
         );
   }
 
@@ -176,7 +176,9 @@ void Tile<D>::recv_particle_data(
 {
   for (size_t ispc=0; ispc<Nspecies(); ispc++) {
     auto& container = get_container(ispc);
-    container.incoming_particles.resize( container.optimal_message_size );
+    if (container.incoming_particles.size() < size_t(container.optimal_message_size)) {
+      container.incoming_particles.resize( container.optimal_message_size );
+    }
 
     reqs.emplace_back(
         comm.irecv(orig, get_tag(corgi::Tile<D>::cid, ispc),
@@ -205,15 +207,19 @@ void Tile<D>::recv_particle_extra_data(
     // check if we need to expect extra message
     extra_size = msginfo.size() - container.optimal_message_size;
     if(extra_size > 0) {
-      container.incoming_extra_particles.resize(extra_size);
+
+      // avoid unnecessary resizes
+      if (container.incoming_extra_particles.size() < size_t(extra_size)) {
+        container.incoming_extra_particles.resize(extra_size);
+      }
 
       reqs.emplace_back(
           comm.irecv(orig, get_extra_tag(corgi::Tile<D>::cid, ispc),
             container.incoming_extra_particles.data(),
             extra_size)
           );
-    } else {
-      container.incoming_extra_particles.clear();
+    //} else {
+    //  container.incoming_extra_particles.clear();
     }
 
     //TODO: dynamic optimal_message_size here
@@ -256,6 +262,13 @@ void Tile<D>::delete_all_particles()
 
 }
 
+template<std::size_t D>
+void Tile<D>::erase_temporary_arrays()
+{
+  for(auto&& container : containers) 
+    container.erase();
+
+}
 
 } // end of ns pic
 
