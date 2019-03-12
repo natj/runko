@@ -69,6 +69,14 @@ void ParticleContainer::resize(size_t N)
   Nprtcls = N;
 }
 
+void ParticleContainer::clear()
+{
+  for(size_t i=0; i<3; i++) locArr[i].clear();
+  for(size_t i=0; i<3; i++) velArr[i].clear();
+  for(size_t i=0; i<2; i++) indArr[i].clear();
+  wgtArr.clear();
+  Nprtcls = 0;
+}
 
 size_t ParticleContainer::size() 
 { 
@@ -371,8 +379,8 @@ void ParticleContainer::pack_outgoing_particles()
     i++;
   }
 
-  //std::cout << " outg arr size:" << outgoing_particles.size()
-  //          << " outgE arr size: " << outgoing_extra_particles.size()
+  //std::cout << " outg arr size:" << outgoing_particles.capacity()
+  //          << " outgE arr size: " << outgoing_extra_particles.capacity()
   //          << "\n";
 
   // TODO: set next message size dynamically according to history

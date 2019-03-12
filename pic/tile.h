@@ -63,6 +63,9 @@ public:
 
   /// destructor
   ~Tile() override = default;
+  //~Tile() override {
+  //  std::cout << "calling pic tile destructor...\n";
+  //}
 
   /// tile temporal and spatial scales
 

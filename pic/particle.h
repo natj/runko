@@ -140,7 +140,7 @@ class ParticleContainer {
   /// dynamic message size that traces the optimal
   // message length (i.e., number of particles) hand 
   // in hand with the corresponding receiver side.
-  int optimal_message_size = 30;
+  int optimal_message_size = 100;
 
   //! particle specific electric field components
   std::vector<double> Epart;
@@ -166,6 +166,9 @@ class ParticleContainer {
 
   // default virtual dtor
   virtual ~ParticleContainer() = default;
+  //virtual ~ParticleContainer() {
+  //  std::cout << "calling particle container destructor...\n";
+  //}
 
 
   //--------------------------------------------------
@@ -175,6 +178,9 @@ class ParticleContainer {
 
   // resize everything
   virtual void resize(size_t N);
+    
+  // clear all containers
+  virtual void clear();
 
   /// size of the container (in terms of particles)
   size_t size();
