@@ -692,6 +692,23 @@ std::vector<mpi::request> Tile<D>::send_data( mpi::communicator& comm, int dest,
   //  << "\n";
   std::vector<mpi::request> reqs;
 
+  // tag tiles with cid
+  yee.jx.get_cid() = static_cast<double>(this->cid);
+  yee.jy.get_cid() = static_cast<double>(this->cid);
+  yee.jz.get_cid() = static_cast<double>(this->cid);
+
+  yee.ex.get_cid() = static_cast<double>(this->cid);
+  yee.ey.get_cid() = static_cast<double>(this->cid);
+  yee.ez.get_cid() = static_cast<double>(this->cid);
+
+  yee.bx.get_cid() = static_cast<double>(this->cid);
+  yee.by.get_cid() = static_cast<double>(this->cid);
+  yee.bz.get_cid() = static_cast<double>(this->cid);
+
+  //std::cout << "setting to " << this->cid << " vs " << yee.jx.get_cid() << "\n";
+
+  // local reduced cid
+
   if (tag == 0) {
     reqs.emplace_back( comm.isend(dest, get_tag(corgi::Tile<D>::cid, 0), yee.jx.data(), yee.jx.size()) );
     reqs.emplace_back( comm.isend(dest, get_tag(corgi::Tile<D>::cid, 1), yee.jy.data(), yee.jy.size()) );
@@ -722,7 +739,6 @@ std::vector<mpi::request> Tile<D>::recv_data( mpi::communicator& comm, int orig,
   //  << "\n";
 
   std::vector<mpi::request> reqs;
-
 
   if (tag == 0) {
     reqs.emplace_back( comm.irecv(orig, get_tag(corgi::Tile<D>::cid, 0), yee.jx.data(), yee.jx.size()) );

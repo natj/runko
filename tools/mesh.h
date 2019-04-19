@@ -50,7 +50,7 @@ class Mesh {
       std::cout << "Nx: " << Nx << " Ny " << Ny << " Nz " << Nz << "\n";
       */
 
-      assert( (indx >= 0) && (indx <  (int)mat.size() ) );
+      assert( (indx >= 0) && (indx <  ((int)mat.size()-1) ) );
 
       return indx;
     }
@@ -71,7 +71,7 @@ class Mesh {
     Mesh(size_t Nx_in, size_t Ny_in, size_t Nz_in) : 
       Nx(Nx_in), Ny(Ny_in), Nz(Nz_in) 
     {
-      mat.resize( (Nx + 2*H)*(Ny + 2*H)*(Nz + 2*H) );
+      mat.resize( (Nx + 2*H)*(Ny + 2*H)*(Nz + 2*H) +1 );
       std::fill(mat.begin(), mat.end(), T() ); // fill with zeros
     };
 
@@ -95,6 +95,12 @@ class Mesh {
     /// clear internal storage (overriding with zeros to avoid garbage)
     void clear() {
       std::fill(mat.begin(), mat.end(), T() ); // fill with zeros
+    }
+
+    // get extra out-of-bounds element form an array
+    T& get_cid() {
+      assert( mat.size()-1 ==  (Nx + 2*H)*(Ny + 2*H)*(Nz + 2*H) );
+      return mat[ (Nx + 2*H)*(Ny + 2*H)*(Nz + 2*H) ];
     }
 
 

@@ -71,6 +71,7 @@ void declare_mesh(
         s(i,j,k) = val;
         })
     .def("clear",        &Class::clear)
+    .def("get_cid",      &Class::get_cid)
     .def(py::self +  py::self)
     .def(py::self += py::self)
     .def(py::self -  py::self)
