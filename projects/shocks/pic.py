@@ -354,6 +354,22 @@ if __name__ == "__main__":
         debug_print(grid, "lap_start")
 
         ################################################## 
+        # expanding simulation domain
+        
+        #loop over tiles; flag active ones
+        #use flag to signal tiles for no mpi comm
+
+        #flag half-actives separately for injection
+        #inject on the fly
+
+        #reset field values in front of wall (reverse piston)
+
+        #moving_wall.inject(grid, filler, conf)
+
+
+
+
+        ################################################## 
         # advance Half B
 
         #--------------------------------------------------
