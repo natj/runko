@@ -2,7 +2,11 @@
 #include <cmath>
 
 #include "tile.h"
+//#include <nvtx3/nvToolsExt.h> 
 
+
+#include "../tools/iter/iter.h"
+#include "../tools/iter/allocator.h"
 
 namespace fields {
   using namespace mpi4cpp;
@@ -58,6 +62,8 @@ const YeeLattice& Tile<D>::get_const_yee(int /*i*/) const
   //return this->yee.at(0);
   return this->yee;
 }
+
+
 
 
 //--------------------------------------------------
@@ -334,6 +340,136 @@ inline void add_point_yee(
 }
 
 
+// further collapsed helper functions 
+
+
+void copy_vert_yee_halo(YeeLattice& lhs, YeeLattice& rhs, int Ny, int Nz, int halo, int ito, int ifro, int in, int ind=0)
+{
+    //
+    UniIter::iterate3D([=] DEVCALLABLE (int j, int k ,int h, YeeLattice &lhs_in, YeeLattice &rhs_in){
+      //
+      lhs_in.ex(ito+in*h, j, k) = rhs_in.ex(ifro+in*h, j, k);
+      lhs_in.ey(ito+in*h, j, k) = rhs_in.ey(ifro+in*h, j, k);
+      lhs_in.ez(ito+in*h, j, k) = rhs_in.ez(ifro+in*h, j, k);
+    
+      lhs_in.bx(ito+in*h, j, k) = rhs_in.bx(ifro+in*h, j, k);
+      lhs_in.by(ito+in*h, j, k) = rhs_in.by(ifro+in*h, j, k);
+      lhs_in.bz(ito+in*h, j, k) = rhs_in.bz(ifro+in*h, j, k);
+    
+      lhs_in.jx(ito+in*h, j, k) = rhs_in.jx(ifro+in*h, j, k);
+      lhs_in.jy(ito+in*h, j, k) = rhs_in.jy(ifro+in*h, j, k);
+      lhs_in.jz(ito+in*h, j, k) = rhs_in.jz(ifro+in*h, j, k);
+    }, Ny, Nz, halo, lhs, rhs);
+}
+
+
+void copy_horz_yee_halo(YeeLattice& lhs, YeeLattice& rhs, int Nx, int Nz, int halo, int jto, int jfro, int jn, int ind=0)
+{
+    UniIter::iterate3D([=] DEVCALLABLE (int i, int k ,int g, YeeLattice &lhs_in, YeeLattice &rhs_in){
+      lhs_in.ex(i, jto+jn*g, k) = rhs_in.ex(i, jfro+jn*g, k);
+      lhs_in.ey(i, jto+jn*g, k) = rhs_in.ey(i, jfro+jn*g, k);
+      lhs_in.ez(i, jto+jn*g, k) = rhs_in.ez(i, jfro+jn*g, k);
+
+      lhs_in.bx(i, jto+jn*g, k) = rhs_in.bx(i, jfro+jn*g, k);
+      lhs_in.by(i, jto+jn*g, k) = rhs_in.by(i, jfro+jn*g, k);
+      lhs_in.bz(i, jto+jn*g, k) = rhs_in.bz(i, jfro+jn*g, k);
+
+      lhs_in.jx(i, jto+jn*g, k) = rhs_in.jx(i, jfro+jn*g, k);
+      lhs_in.jy(i, jto+jn*g, k) = rhs_in.jy(i, jfro+jn*g, k);
+      lhs_in.jz(i, jto+jn*g, k) = rhs_in.jz(i, jfro+jn*g, k);
+    }, Nx, Nz, halo, lhs, rhs);
+}
+
+
+void copy_face_yee_halo(YeeLattice& lhs, YeeLattice& rhs, int Nx, int Ny, int halo, int kto, int kfro, int kn, int ind=0)
+{
+    UniIter::iterate3D([=] DEVCALLABLE (int i, int j ,int g, YeeLattice &lhs_in, YeeLattice &rhs_in){ 
+        lhs_in.ex(i, j, kto+kn*g) = rhs_in.ex(i, j, kfro+kn*g);
+        lhs_in.ey(i, j, kto+kn*g) = rhs_in.ey(i, j, kfro+kn*g);
+        lhs_in.ez(i, j, kto+kn*g) = rhs_in.ez(i, j, kfro+kn*g);
+
+        lhs_in.bx(i, j, kto+kn*g) = rhs_in.bx(i, j, kfro+kn*g);
+        lhs_in.by(i, j, kto+kn*g) = rhs_in.by(i, j, kfro+kn*g);
+        lhs_in.bz(i, j, kto+kn*g) = rhs_in.bz(i, j, kfro+kn*g);
+
+        lhs_in.jx(i, j, kto+kn*g) = rhs_in.jx(i, j, kfro+kn*g);
+        lhs_in.jy(i, j, kto+kn*g) = rhs_in.jy(i, j, kfro+kn*g);
+        lhs_in.jz(i, j, kto+kn*g) = rhs_in.jz(i, j, kfro+kn*g);
+    }, Nx, Ny, halo, lhs, rhs);
+}
+
+
+
+void copy_x_pencil_yee_halo(YeeLattice& lhs, YeeLattice& rhs, int Nx, int halo, int jto, int jfro, int kto, int kfro, int jn, int kn, int ind=0)
+{   
+    UniIter::iterate3D([=] DEVCALLABLE (int i, int g ,int h, YeeLattice &lhs_in, YeeLattice &rhs_in){
+      lhs_in.ex(i, jto+jn*h, kto+kn*g) = rhs_in.ex(i, jfro+jn*h, kfro+kn*g);
+      lhs_in.ey(i, jto+jn*h, kto+kn*g) = rhs_in.ey(i, jfro+jn*h, kfro+kn*g);
+      lhs_in.ez(i, jto+jn*h, kto+kn*g) = rhs_in.ez(i, jfro+jn*h, kfro+kn*g);
+
+      lhs_in.bx(i, jto+jn*h, kto+kn*g) = rhs_in.bx(i, jfro+jn*h, kfro+kn*g);
+      lhs_in.by(i, jto+jn*h, kto+kn*g) = rhs_in.by(i, jfro+jn*h, kfro+kn*g);
+      lhs_in.bz(i, jto+jn*h, kto+kn*g) = rhs_in.bz(i, jfro+jn*h, kfro+kn*g);
+
+      lhs_in.jx(i, jto+jn*h, kto+kn*g) = rhs_in.jx(i, jfro+jn*h, kfro+kn*g);
+      lhs_in.jy(i, jto+jn*h, kto+kn*g) = rhs_in.jy(i, jfro+jn*h, kfro+kn*g);
+      lhs_in.jz(i, jto+jn*h, kto+kn*g) = rhs_in.jz(i, jfro+jn*h, kfro+kn*g);
+    }, Nx, halo, halo, lhs, rhs);
+  }
+
+  void copy_y_pencil_yee_halo(YeeLattice& lhs, YeeLattice& rhs, int Ny, int halo, int ito, int ifro, int kto, int kfro, int in, int kn, int ind=0)
+{   
+    UniIter::iterate3D([=] DEVCALLABLE (int j, int g ,int h, YeeLattice &lhs_in, YeeLattice &rhs_in){
+
+      lhs_in.ex(ito+in*h, j, kto+kn*g) = rhs_in.ex(ifro+in*h, j, kfro+kn*g);
+      lhs_in.ey(ito+in*h, j, kto+kn*g) = rhs_in.ey(ifro+in*h, j, kfro+kn*g);
+      lhs_in.ez(ito+in*h, j, kto+kn*g) = rhs_in.ez(ifro+in*h, j, kfro+kn*g);
+
+      lhs_in.bx(ito+in*h, j, kto+kn*g) = rhs_in.bx(ifro+in*h, j, kfro+kn*g);
+      lhs_in.by(ito+in*h, j, kto+kn*g) = rhs_in.by(ifro+in*h, j, kfro+kn*g);
+      lhs_in.bz(ito+in*h, j, kto+kn*g) = rhs_in.bz(ifro+in*h, j, kfro+kn*g);
+
+      lhs_in.jx(ito+in*h, j, kto+kn*g) = rhs_in.jx(ifro+in*h, j, kfro+kn*g);
+      lhs_in.jy(ito+in*h, j, kto+kn*g) = rhs_in.jy(ifro+in*h, j, kfro+kn*g);
+      lhs_in.jz(ito+in*h, j, kto+kn*g) = rhs_in.jz(ifro+in*h, j, kfro+kn*g);
+    }, Ny, halo, halo, lhs, rhs);
+  }
+
+  void copy_z_pencil_yee_halo(YeeLattice& lhs, YeeLattice& rhs, int Nz, int halo, int ito, int ifro, int jto, int jfro, int in, int jn, int ind=0)
+{
+    UniIter::iterate3D([=] DEVCALLABLE (int k, int g ,int h, YeeLattice &lhs_in, YeeLattice &rhs_in){
+      lhs_in.ex(ito+in*h, jto+jn*g, k) = rhs_in.ex(ifro+in*h, jfro+jn*g, k);
+      lhs_in.ey(ito+in*h, jto+jn*g, k) = rhs_in.ey(ifro+in*h, jfro+jn*g, k);
+      lhs_in.ez(ito+in*h, jto+jn*g, k) = rhs_in.ez(ifro+in*h, jfro+jn*g, k);
+
+      lhs_in.bx(ito+in*h, jto+jn*g, k) = rhs_in.bx(ifro+in*h, jfro+jn*g, k);
+      lhs_in.by(ito+in*h, jto+jn*g, k) = rhs_in.by(ifro+in*h, jfro+jn*g, k);
+      lhs_in.bz(ito+in*h, jto+jn*g, k) = rhs_in.bz(ifro+in*h, jfro+jn*g, k);
+
+      lhs_in.jx(ito+in*h, jto+jn*g, k) = rhs_in.jx(ifro+in*h, jfro+jn*g, k);
+      lhs_in.jy(ito+in*h, jto+jn*g, k) = rhs_in.jy(ifro+in*h, jfro+jn*g, k);
+      lhs_in.jz(ito+in*h, jto+jn*g, k) = rhs_in.jz(ifro+in*h, jfro+jn*g, k);
+  
+    }, Nz, halo, halo, lhs, rhs);
+  }
+
+  void copy_point_yee_halo(YeeLattice& lhs, YeeLattice& rhs, int halo, int ito, int ifro, int jto, int jfro, int kto, int kfro, int in, int jn, int kn, int ind=0)
+  {
+    UniIter::iterate3D([=] DEVCALLABLE (int f, int g ,int h, YeeLattice &lhs_in, YeeLattice &rhs_in){
+      lhs_in.ex(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.ex(ifro+in*h, jfro+jn*g, kfro+kn*f);
+      lhs_in.ey(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.ey(ifro+in*h, jfro+jn*g, kfro+kn*f);
+      lhs_in.ez(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.ez(ifro+in*h, jfro+jn*g, kfro+kn*f);
+
+      lhs_in.bx(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.bx(ifro+in*h, jfro+jn*g, kfro+kn*f);
+      lhs_in.by(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.by(ifro+in*h, jfro+jn*g, kfro+kn*f);
+      lhs_in.bz(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.bz(ifro+in*h, jfro+jn*g, kfro+kn*f);
+
+      lhs_in.jx(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.jx(ifro+in*h, jfro+jn*g, kfro+kn*f);
+      lhs_in.jy(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.jy(ifro+in*h, jfro+jn*g, kfro+kn*f);
+      lhs_in.jz(ito +in*h, jto +jn*g, kto +kn*f) =  rhs_in.jz(ifro+in*h, jfro+jn*g, kfro+kn*f);
+    }, halo, halo, halo, lhs, rhs);
+  }
+
 
 /// Update Yee grid boundaries
 template<>
@@ -425,11 +561,20 @@ void Tile<2>::update_boundaries(corgi::Grid<2>& grid)
   }
 }
 
+struct BlockCopyParam
+{
+  //
+  bool active;
+  int ito, ifro, jto, jfro, kto, kfro, in, jn, kn;
+  YeeLattice *yeePtrFrom;
+  YeeLattice *yeePtrTo;
+};
 
 template<>
 void Tile<3>::update_boundaries(corgi::Grid<3>& grid) 
 {
   //std::cout << "upB: updating boundaries\n";
+  //nvtxRangePush(__FUNCTION__);
 
   using Tile_t  = Tile<3>;
   using Tileptr = std::shared_ptr<Tile_t>;
@@ -441,11 +586,11 @@ void Tile<3>::update_boundaries(corgi::Grid<3>& grid)
 
   int halo = 3; // halo region size for fields
 
+  int ind = 0;
+
   for(int in=-1; in <= 1; in++) {
     for(int jn=-1; jn <= 1; jn++) {
       for(int kn=-1; kn <= 1; kn++) {
-
-        //std::cout << "upB: " << in << "," << jn << "," << kn << "\n";
 
         if (in == 0 && jn == 0 && kn == 0) continue;
 
@@ -470,37 +615,19 @@ void Tile<3>::update_boundaries(corgi::Grid<3>& grid)
           if (jn == -1) { jto = -1;      jfro = mpr.Ny-1; }
           if (kn == -1) { kto = -1;      kfro = mpr.Nz-1; }
 
-          // copy (halo = 1) assignment
-          //if      (jn == 0) copy_vert_yee(    mesh, mpr, ito, ifro);   // vertical
-          //else if (in == 0) copy_horz_yee(    mesh, mpr, jto, jfro);   // horizontal
-          //else              copy_z_pencil_yee(mesh, mpr, ito, jto, ifro, jfro); // diagonal
-
-          //std::cout << "upB: " << in << "," << jn << "," << kn << " "
-          //  << "(" << ito << "/" << jto << "/" << kto << "  " << ifro << "/" << jfro << "/" << kfro << ")\n";
-          
-
           // generalized halo >= 1 loops
 
-          // 2D case; kn == 0; no tiles behind or infront
           if (kn == 0) {
 
             // vertical
             if (jn == 0) { 
-              for(int h=0; h<halo; h++)
-                copy_vert_yee(mesh, mpr, ito+in*h, ifro+in*h);   
-
             // horizontal
+              copy_vert_yee_halo(mesh, mpr, mesh.ex.Ny, mesh.ex.Nz, halo, ito, ifro, in, ind);
             } else if (in == 0) { 
-              for(int g=0; g<halo; g++)
-                copy_horz_yee(mesh, mpr, jto+jn*g, jfro+jn*g);   
-
             // diagonal
+              copy_horz_yee_halo(mesh, mpr, mesh.ex.Nx, mesh.ex.Nz, halo, jto, jfro, jn, ind);
             } else { 
-              for(int h=0; h<halo; h++) {
-                for(int g=0; g<halo; g++) {
-                  copy_z_pencil_yee(mesh, mpr, ito+in*h, jto+jn*g, ifro+in*h, jfro+jn*g); 
-                }
-              }
+             copy_z_pencil_yee_halo(mesh, mpr, mesh.ex.Nz, halo, ito, ifro, jto, jfro, in, jn, ind);
             } 
          
           // 3D case with kn != 0
@@ -508,54 +635,36 @@ void Tile<3>::update_boundaries(corgi::Grid<3>& grid)
             
             // infront/behind directions
             if (in == 0 && jn == 0) { 
-              for(int g=0; g<halo; g++)
-                copy_face_yee(mesh, mpr, kto+kn*g, kfro+kn*g);   
-
+              copy_face_yee_halo(mesh, mpr, mesh.ex.Nx, mesh.ex.Ny, halo, kto, kfro, kn, ind);
             // 3D generalized diagonal locations
             // If the finite-difference scheme is purely non-diagonal
             // then these can be dropped off.
               
             // vertical wedges
             } else if (jn == 0) {
-
               // y pencils
-              for(int h=0; h<halo; h++) {
-                for(int g=0; g<halo; g++) {
-                  copy_y_pencil_yee(mesh, mpr, ito+in*h, kto+kn*g, ifro+in*h, kfro+kn*g); 
-                }
-              }
-
+              copy_y_pencil_yee_halo(mesh, mpr, mesh.ex.Ny, halo, ito, ifro, kto, kfro, in, kn, ind);
             // horizontal wedges
             } else if (in == 0) {
-
               // x pencils
-              for(int h=0; h<halo; h++) {
-                for(int g=0; g<halo; g++) {
-                  copy_x_pencil_yee(mesh, mpr, jto+jn*h, kto+kn*g, jfro+jn*h, kfro+kn*g); 
-                }
-              }
+              copy_x_pencil_yee_halo(mesh, mpr, mesh.ex.Nx, halo, jto, jfro, kto, kfro, jn, kn, ind);
 
             // corners
             } else {
-
               // pointwise
-              for(int h=0; h<halo; h++) {
-                for(int g=0; g<halo; g++) {
-                  for(int f=0; f<halo; f++) {
-                    copy_point_yee(mesh, mpr, 
-                        ito +in*h, jto +jn*g, kto +kn*f,
-                        ifro+in*h, jfro+jn*g, kfro+kn*f);
-                  }
-                }
-              }
-            } 
+              copy_point_yee_halo(mesh, mpr, halo, ito, ifro, jto, jfro, kto, kfro, in, jn, kn, ind);
 
+            } 
+            ind++;
           } // 3D cases with kn != 0
         } // if tpr
       } // kn
     } // jn
   } // in
+  
+  UniIter::sync();
 
+  //nvtxRangePop();
   }
 
 
@@ -628,6 +737,7 @@ void Tile<1>::exchange_currents(corgi::Grid<1>& grid)
 template<>
 void Tile<2>::exchange_currents(corgi::Grid<2>& grid) 
 {
+
   using Tile_t  = Tile<2>;
   using Tileptr = std::shared_ptr<Tile_t>;
 
@@ -684,6 +794,8 @@ void Tile<2>::exchange_currents(corgi::Grid<2>& grid)
 template<>
 void Tile<3>::exchange_currents(corgi::Grid<3>& grid) 
 {
+  //nvtxRangePush(__FUNCTION__);
+
   using Tile_t  = Tile<3>;
   using Tileptr = std::shared_ptr<Tile_t>;
 
@@ -798,7 +910,7 @@ void Tile<3>::exchange_currents(corgi::Grid<3>& grid)
       }
     }
   }
-
+  //nvtxRangePop();
 }
 
 
@@ -842,6 +954,8 @@ std::vector<mpi::request> Tile<D>::send_data(
     int mode,
     int tag)
 {
+  //nvtxRangePush(__FUNCTION__);
+
   auto& yee = get_yee(); 
   //std::cout << "SEND field to " << dest 
   //  << "nx " << yee.jx.size()
@@ -849,7 +963,7 @@ std::vector<mpi::request> Tile<D>::send_data(
   //  << "nz " << yee.jz.size()
   //  << "\n";
   std::vector<mpi::request> reqs;
-
+  UniIter::sync();
   if (mode == 0) {
     reqs.emplace_back( comm.isend(dest, get_tag(tag, 0), yee.jx.data(), yee.jx.size()) );
     reqs.emplace_back( comm.isend(dest, get_tag(tag, 1), yee.jy.data(), yee.jy.size()) );
@@ -864,6 +978,8 @@ std::vector<mpi::request> Tile<D>::send_data(
     reqs.emplace_back( comm.isend(dest, get_tag(tag, 8), yee.bz.data(), yee.bz.size()) );
   }
 
+  //nvtxRangePop();
+
   return reqs;
 }
 
@@ -875,6 +991,8 @@ std::vector<mpi::request> Tile<D>::recv_data(
     int mode,
     int tag)
 {
+  //nvtxRangePush(__FUNCTION__);
+
   //std::cout << "RECV from " << orig << "\n";
   auto& yee = get_yee(); 
   //std::cout << "RECV field to " << orig
@@ -884,7 +1002,7 @@ std::vector<mpi::request> Tile<D>::recv_data(
   //  << "\n";
 
   std::vector<mpi::request> reqs;
-
+  UniIter::sync();
 
   if (mode == 0) {
     reqs.emplace_back( comm.irecv(orig, get_tag(tag, 0), yee.jx.data(), yee.jx.size()) );
@@ -900,11 +1018,10 @@ std::vector<mpi::request> Tile<D>::recv_data(
     reqs.emplace_back( comm.irecv(orig, get_tag(tag, 8), yee.bz.data(), yee.bz.size()) );
   }
 
+  //nvtxRangePop();
 
   return reqs;
 }
-
-
 
 //--------------------------------------------------
 // explicit template instantiation

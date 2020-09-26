@@ -40,6 +40,8 @@ class YeeLattice
   toolbox::Mesh<real_short, 3> jy;
   toolbox::Mesh<real_short, 3> jz;
 
+
+
   // default empty constructor
   YeeLattice()  = default;
 
@@ -56,7 +58,9 @@ class YeeLattice
     jx{Nx, Ny, Nz},
     jy{Nx, Ny, Nz},
     jz{Nx, Ny, Nz}
-  { }
+  { 
+    DEV_REGISTER
+  }
 
   // copy ctor
   YeeLattice(YeeLattice& other) = default;
@@ -89,6 +93,8 @@ class YeeLattice
     swap(first.jx , second.jx);
     swap(first.jy , second.jy);
     swap(first.jz , second.jz);
+
+
   }
 
   // copy-and-swap algorithm
@@ -98,7 +104,11 @@ class YeeLattice
     return *this;
   }
 
-  ~YeeLattice() = default;
+  ~YeeLattice()
+  {
+
+  };
+
 };
 
 
@@ -175,6 +185,7 @@ class Tile :
 
   std::vector<mpi::request> 
   recv_data( mpi::communicator& /*comm*/, int orig, int mode, int tag) override;
+
 };
 
 
