@@ -74,6 +74,20 @@ def BoxMuller_method(T):
 # dimensionality = 2 for xy; 3 for xyz
 def sample_boosted_maxwellian(theta, Gamma, direction=1, dims=2):
 
+    if theta == 0.0:
+        if   direction == -1:
+            ux = -1.0*Gamma
+            uy = 0.0
+            uz = 0.0
+        elif direction == +1:
+            ux = 1.0*Gamma
+            uy = 0.0
+            uz = 0.0
+
+        u = 1.0*Gamma
+        return ux, uy, uz, u
+
+
     #For relativistic case we use Sobol method, inverse method otherwise
     if theta > 0.2:
         u = sobol_method(theta)
